@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<title>Rahnama · LiveKit media test</title>
+<!-- SDK served LOCALLY from the origin (not a CDN) so it isn't subject to DPI.
+     Deploy step fetches livekit-client.umd.min.js next to this file via the proxy. -->
+<script src="./livekit-client.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<!-- Fonts are optional and non-blocking (media swap), so a filtered CDN never stalls the page. -->
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+<style>
+  :root{
+    --bg:#eef2f4; --panel:#ffffff; --ink:#172433; --muted:#5b6b7a; --line:#d6dee4;
+    --firuzeh:#138a86; --lapis:#23408e; --saffron:#c98a12; --bad:#c2413a;
+    --console:#12202e; --console-ink:#cfe3e6;
+    --font:"Vazirmatn",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#0d1824; --panel:#132232; --ink:#e4ecf1; --muted:#8fa3b3; --line:#223648;
+      --firuzeh:#3cc3bd; --lapis:#7f9cf0; --saffron:#e8b04a; --bad:#ef7a6f;
+      --console:#08111a; --console-ink:#bfd9dc; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:
+      radial-gradient(900px 500px at 50% -10%, color-mix(in srgb,var(--firuzeh) 16%,transparent), transparent 70%),
+      var(--bg);
+    color:var(--ink);font:16px/1.6 var(--font);padding:clamp(24px,5vw,56px) 16px}
+  body{display:grid;align-content:center}
+  main{width:100%;max-width:980px;margin:0 auto;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:clamp(24px,4vw,48px);align-items:center}
+  @media (max-width:820px){ main{grid-template-columns:1fr} }
+
+  /* identity column */
+  .brand{display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:8px}
+  .orb{position:relative;width:min(240px,48vw);aspect-ratio:1;display:grid;place-items:center;margin-bottom:20px}
+  .orb span{position:absolute;inset:0;border-radius:50%;border:1.5px solid color-mix(in srgb,var(--firuzeh) 45%,transparent)}
+  .orb span:nth-child(2){inset:14%;border-color:color-mix(in srgb,var(--firuzeh) 65%,transparent)}
+  .orb span:nth-child(3){inset:28%;border:0;background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--firuzeh) 70%,white),var(--firuzeh) 55%,var(--lapis));box-shadow:0 18px 50px -12px color-mix(in srgb,var(--firuzeh) 70%,transparent)}
+  .orb b{position:relative;font:800 clamp(28px,7vw,40px)/1 var(--font);color:#fff;letter-spacing:0}
+  body[data-state="connecting"] .orb span:nth-child(-n+2),
+  body[data-state="reconnecting"] .orb span:nth-child(-n+2){animation:ring 1.6s ease-out infinite}
+  body[data-state="connecting"] .orb span:nth-child(2){animation-delay:.4s}
+  body[data-state="connected"] .orb span:nth-child(-n+2){border-color:var(--firuzeh);animation:breathe 3.2s ease-in-out infinite}
+  body[data-state="disconnected"] .orb span:nth-child(3){filter:grayscale(.8) brightness(.8)}
+  @keyframes ring{0%{transform:scale(.85);opacity:1}100%{transform:scale(1.12);opacity:0}}
+  @keyframes breathe{50%{transform:scale(1.04)}}
+  @media (prefers-reduced-motion:reduce){ .orb span{animation:none!important} }
+  h1{margin:0;font-size:clamp(26px,3.4vw,34px);font-weight:800;line-height:1.2;letter-spacing:-.01em}
+  .fa{font-weight:600;color:var(--firuzeh);font-size:18px;margin:2px 0 14px}
+  .lede{color:var(--muted);max-width:40ch;margin:0}
+
+  /* control column */
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:clamp(20px,3vw,28px);box-shadow:0 30px 60px -40px rgba(20,40,60,.45)}
+  #go{width:100%;font:600 17px/1 var(--font);color:#fff;background:linear-gradient(180deg,color-mix(in srgb,var(--firuzeh) 88%,white),var(--firuzeh));border:0;border-radius:14px;padding:16px 20px;cursor:pointer;box-shadow:0 10px 24px -12px var(--firuzeh);transition:transform .15s,filter .15s}
+  #go:hover{filter:brightness(1.06)} #go:active{transform:translateY(1px)}
+  #go:focus-visible{outline:3px solid var(--lapis);outline-offset:3px}
+  .readout{margin:22px 0 6px;padding:14px 16px;border-radius:12px;background:color-mix(in srgb,var(--firuzeh) 8%,var(--panel));border:1px solid var(--line)}
+  .readout small{display:block;color:var(--muted);font-size:13px}
+  .t{font:600 15px/1.5 var(--mono);color:var(--ink);word-break:break-word}
+  .ladder{list-style:none;margin:14px 0 22px;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:13px}
+  .ladder li{padding:10px 12px;border-radius:10px;border:1px dashed var(--line);color:var(--muted);line-height:1.35}
+  .ladder strong{display:block;color:var(--ink);font-weight:600;font-size:14px}
+  @media (max-width:420px){ .ladder{gap:6px;font-size:12px} .ladder li{padding:8px 9px} }
+  #log{white-space:pre-wrap;background:var(--console);color:var(--console-ink);padding:14px 16px;border-radius:12px;font:13px/1.65 var(--mono);min-height:180px;max-height:320px;overflow:auto;direction:ltr;text-align:left}
+  #log:empty::before{content:"Waiting for connect. Events from the room will appear here.";color:color-mix(in srgb,var(--console-ink) 45%,transparent)}
+  .ok{color:#5fd6a8}.bad{color:#ff8a80}
+  .foot{margin:12px 2px 0;color:var(--muted);font-size:13px}
+  audio{display:none}
+</style>
+</head>
+<body data-state="idle">
+<main>
+  <section class="brand">
+    <div class="orb" aria-hidden="true"><span></span><span></span><span></span><b lang="fa">راهنما</b></div>
+    <h1>LiveKit no-VPN media test</h1>
+    <p class="fa" lang="fa" dir="rtl">دستیار صوتی فارسی · آزمون اتصال</p>
+    <p class="lede">Open this page from a restricted network <b>without a VPN</b>. It joins the SFU, sends mic,
+    and shows which transport won — proving whether the DPI bypass holds.</p>
+  </section>
+
+  <section class="panel" aria-label="Connection test">
+    <button id="go">Connect &amp; publish mic</button>
+    <div class="readout" aria-live="polite"><small>Selected transport</small><span id="transport" class="t">—</span></div>
+    <ul class="ladder" aria-label="Fallback order">
+      <li><strong>UDP</strong>single-port mux</li>
+      <li><strong>ICE/TCP</strong>port 7881 fallback</li>
+      <li><strong>TURN-TLS</strong>over 443</li>
+    </ul>
+    <div id="log" role="log"></div>
+    <p class="foot">Append <code>?token=</code> (and optionally <code>&amp;url=</code>) to the page URL.</p>
+  </section>
+</main>
+<script>
+const LK = window.LivekitClient;
+const qs = new URLSearchParams(location.search);
+const WS_URL = qs.get('url') || ('wss://' + location.host);  // served from lk.<domain> => same host
+const TOKEN = qs.get('token') || '';                          // ?token=<minted-on-server>
+const log = (m,c)=>{const d=document.getElementById('log');d.innerHTML+=`<span class="${c||''}">${m}</span>\n`;d.scrollTop=d.scrollHeight;};
+
+async function pollTransport(room){
+  // dig the selected ICE candidate pair out of the underlying RTCPeerConnection
+  const pc = room.engine?.pcManager?.subscriber?.pc || room.engine?.pcManager?.publisher?.pc;
+  if(!pc){setTimeout(()=>pollTransport(room),1000);return;}
+  const stats = await pc.getStats();
+  let pair, local;
+  stats.forEach(r=>{ if(r.type==='candidate-pair' && r.nominated && r.state==='succeeded') pair=r; });
+  if(pair){ stats.forEach(r=>{ if(r.id===pair.localCandidateId) local=r; }); }
+  if(local){
+    const proto=(local.protocol||'?').toUpperCase(), type=local.candidateType; // host/srflx/relay
+    const verdict = proto==='UDP' ? 'UDP (best, normal domestic)'
+                  : proto==='TCP' && type==='relay' ? 'TURN-TLS/443 (HTTPS-disguised — heavy DPI survived)'
+                  : proto==='TCP' ? 'ICE/TCP:7881 (UDP throttled → TCP fallback held)'
+                  : proto;
+    document.getElementById('transport').textContent = `${proto} / ${type} → ${verdict}`;
+  }
+  setTimeout(()=>pollTransport(room),2000);
+}
+
+document.getElementById('go').onclick = async ()=>{
+  if(!TOKEN){log('No ?token= in URL. Mint one on the server and append it.','bad');return;}
+  const room = new LK.Room({ adaptiveStream:true });
+  room.on(LK.RoomEvent.ConnectionStateChanged, s=>{document.body.dataset.state=s;log('state: '+s);});
+  room.on(LK.RoomEvent.Disconnected, r=>log('disconnected: '+r,'bad'));
+  room.on(LK.RoomEvent.ParticipantConnected, p=>log('agent joined: '+p.identity,'ok'));
+  room.on(LK.RoomEvent.TrackSubscribed, (track,pub,p)=>{
+    if(track.kind==='audio'){ const el=track.attach(); el.autoplay=true; el.setAttribute('playsinline',''); document.body.appendChild(el); log('🔊 hearing agent ('+p.identity+') — speak Persian','ok'); }
+  });
+  try{
+    log('connecting to '+WS_URL+' …');
+    await room.connect(WS_URL, TOKEN);
+    log('connected. room='+room.name,'ok');
+    await room.localParticipant.setMicrophoneEnabled(true);
+    log('mic published. watching transport…','ok');
+    pollTransport(room);
+  }catch(e){ log('ERROR: '+e.message,'bad'); }
+};
+</script>
+</body>
+</html>

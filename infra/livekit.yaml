@@ -1,0 +1,38 @@
+# LiveKit SFU — self-hosted on a domestic public-IP server (YOUR_SERVER_IP)
+# Domestic users connect HERE directly over WebRTC. No VPN.
+# Foreign AI (STT/LLM/TTS) is proxied by the AGENT worker, NOT by this server.
+#
+# Keys verified against config-sample.yaml@master (livekit/livekit).
+port: 7880                      # signaling + RoomService HTTP. Fronted by nginx TLS on 443 (lk.<domain>).
+log_level: info
+
+keys:
+  # Generate real ones on the server:  livekit-server generate-keys
+  # Put the real key/secret here at deploy time (this file is NOT committed with real keys).
+  REPLACE_API_KEY: REPLACE_API_SECRET
+
+rtc:
+  udp_port: 7882                # single-port UDPMux (audio-only MVP) -> ONE firewall rule to test per ISP
+  tcp_port: 7881                # ICE/TCP fallback (raw TCP, NO TLS, not behind a proxy) when UDP is dropped
+  use_external_ip: false        # public IP is directly on eth0 — no NAT, no STUN needed
+  node_ip: YOUR_SERVER_IP       # pin advertised address explicitly (ignored if use_external_ip:true — keep false)
+  use_ice_lite: true            # valid here: 1:1 public IP, no NAT/CGNAT. DISABLE if the box ever moves behind NAT.
+
+  # --- Iran "connect-then-throttle" handling: THE critical non-default trio ---
+  # Default allow_tcp_fallback alone handles "UDP never works" but NOT a UDP session that
+  # connects then gets throttled (Iran's signature). The pair below migrates a lossy UDP
+  # session onto ICE/TCP. Verified in config-sample.yaml + LiveKit firewall KB.
+  allow_tcp_fallback: true
+  allow_udp_unstable_fallback: true
+  tcp_fallback_rtt_threshold: 150   # ms; at/above this on a degrading UDP path, jump to TCP
+
+# --- Phase-2 hardening: embedded TURN/TLS on 443 = best DPI disguise (looks like HTTPS) ---
+# Needs a SECOND public IP (IP#1:443 is already nginx->wss here) + a real CA cert + nginx
+# stream (L4) passthrough, NOT http proxy_pass. MVP relies on UDP:7882 + ICE/TCP:7881, which
+# is enough while domestic UDP works (rides the NIN). Enable this when hardening for crackdowns.
+# turn:
+#   enabled: true
+#   domain: turn.<domain>
+#   tls_port: 443                 # requires a 2nd IP
+#   cert_file: /etc/letsencrypt/live/turn.<domain>/fullchain.pem
+#   key_file:  /etc/letsencrypt/live/turn.<domain>/privkey.pem
